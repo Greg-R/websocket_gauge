@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+<title>Electro-Gauge Controller</title>
+</head>
+
+<body>
+	<div>
+		<H2>RAVEN ELECTRO-GAUGE</H2>
+		<p id="connectstatus">WebSocket is NOT connected!</p>
+	</div>
+	<div id="buttons">
+		<div id="pumpbuttons">
+			<button id="needle1100">1100</button>
+			<button id="needle1000">1000</button>
+		</div>
+		<div id="pumpbuttons">
+			<button id="needle900">900</button>
+			<button id="needle800">800</button>
+		</div>
+		<div id="zone1buttons">
+			<button id="needle700">700</button>
+			<button id="needle600">600</button>
+
+		</div>
+		<div id="zone2buttons">
+			<button id="needle500">500</button>
+			<button id="needle400">400</button>
+		</div>
+		<div id="zone2buttons">
+			<button id="needle300">300</button>
+			<button id="needle200">200</button>
+		</div>
+		<div id="zone2buttons">
+			<button id="needle100">100</button>
+			<button id="needle0">0</button>
+		</div>
+	</div>
+
+	<script>
+        //  Need a Regular Expression to get the URL to open the WebSocket to.
+        const serverUrlRegex = /\d+\.\d+\.\d+\.\d+/; //  Matches 192.168.1.8 etc.
+        const currentUrl = window.location.origin; //  Get the URL from the browser.
+        console.log(`The currentURL is ${currentUrl}.`);
+        const serverUrl = currentUrl.match(serverUrlRegex); //  Extract what is needed to create WebSocket.
+        console.log(`The server URL is ${serverUrl[0]}`); //  The match is in the 0th element of the array.
+        let ws = new WebSocket(`ws://${serverUrl}/rpc/ledtoggle`); //  Comment this for static URI.
+        // Get buttons.
+        let needle1100 = document.getElementById('needle1100');
+        let needle1000 = document.getElementById('needle1000');
+        let needle900 = document.getElementById('needle900');
+        let needle800 = document.getElementById('needle800');
+        let needle700 = document.getElementById('needle700');
+        let needle600 = document.getElementById('needle600');
+        let needle500 = document.getElementById('needle500');
+        let needle400 = document.getElementById('needle400');
+        let needle300 = document.getElementById('needle300');
+        let needle200 = document.getElementById('needle200');
+        let needle100 = document.getElementById('needle100');
+        let needle0 =   document.getElementById('needle0');
+
+        ws.onopen = function() {
+            console.log('Web browser opened a WebSocket.');
+            //  Update the connection status in the browser.
+            connectstatus.textContent = "WebSocket Connected";
+        }
+
+        ws.onclose = function() {
+            console.log('Web browser WebSocket just closed.');
+            //  Update the connection status in the browser.
+            connectstatus.textContent = "WebSocket is disconnected";
+        }
+
+        needle1100.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 1,
+                        "led": 1100
+                    }
+                }));
+                pumpbuttonon.style.color = "green";
+                pumpbuttonoff.style.color = "black";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+
+        needle1000.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 1000
+                    }
+                }));
+                pumpbuttonon.style.color = "green";
+                pumpbuttonoff.style.color = "black";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+
+
+        needle900.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 1,
+                        "led": 900
+                    }
+                }));
+                zone1buttonon.style.color = "green";
+                zone1buttonoff.style.color = "black";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+
+        needle800.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                console.log("Sending to server.");
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 800
+                    }
+                }));
+                zone1buttonon.style.color = "black";
+                zone1buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+
+        needle700.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 1,
+                        "led": 700
+                    }
+                }));
+                zone2buttonon.style.color = "green";
+                zone2buttonoff.style.color = "black";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+
+        needle600.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 600
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+        
+        needle500.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 500
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+        
+        needle400.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 400
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+        
+        needle300.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 300
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+        
+        needle200.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 200
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+        
+        needle100.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 100
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+        
+        needle0.onclick = function() {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    "method": "ledtoggle", // Required. Function name to invoke.
+                    "args": { // Optional. Call arguments
+                        "state": 0,
+                        "led": 0
+                    }
+                }));
+                zone2buttonon.style.color = "black";
+                zone2buttonoff.style.color = "red";
+            } else {
+                console.log('Websocket is not open.  Message aborted.');
+            }
+        };
+
+    </script>
+</body>
+
+</html>
