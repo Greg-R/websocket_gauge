@@ -7,7 +7,9 @@
 #include "pcnt_init.h"
 
 //  The incoming new meter position is written to this queue by the RPC handler.
-xQueueHandle meter_set;
+// xQueueHandle meter_set;
+
+
 
 //  This is a helper function to initialize the GPIO12 for
 //  use as a direction control signal.
@@ -113,9 +115,11 @@ static void cb(struct mg_rpc_request_info *ri, void * cb_arg,
 
 enum mgos_app_init_result mgos_app_init(void) {
 	//  This queue is used for un-blocking and also can send interrupt type information.
-	pcnt_evt_queue = xQueueCreate(2, sizeof(int32_t));
+//	pcnt_evt_queue = xQueueCreate(2, sizeof(int32_t));
 	//  This queue of size one stores the NEW meter setting;
-	meter_set = xQueueCreate(50, sizeof(int16_t));
+//	meter_set = xQueueCreate(50, sizeof(int16_t));
+
+	uniqueue = xQueueCreate(2, sizeof(int32_t));
 
 	struct mg_rpc *c = mgos_rpc_get_global();
 	//	mgos_gpio_set_mode(17, MGOS_GPIO_MODE_OUTPUT);

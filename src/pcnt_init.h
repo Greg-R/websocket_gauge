@@ -10,7 +10,17 @@
 #define PCNT_INPUT_SIG_IO   4  // Pulse Input GPIO
 #define PCNT_INPUT_CTRL_IO  5  // Control GPIO HIGH=count up, LOW=count down
 
-xQueueHandle pcnt_evt_queue;   // A queue to handle pulse counter events
+//xQueueHandle pcnt_evt_queue;   // A queue to handle pulse counter events
+
+//  This queue uses a struct with data type and meter set value.
+xQueueHandle uniqueue;
+
+//  Will attempt a 32 bit packed struct!
+
+typedef struct {
+	uint16_t intr_type;
+	uint16_t meter_set;
+} meterqueue;
 
 // Decode what PCNT's unit originated an interrupt
 // and pass this information together with the event type
@@ -20,11 +30,12 @@ static void IRAM_ATTR pcnt_example_intr_handler(void *arg)
 {
 	//  Can probably be simplified; really only acts as a blocker in the task.
 //	BaseType_t xHigherPriorityTaskWoken;
-	uint32_t intr_status = PCNT.int_st.val;
+	//  This can be used for debugging.
+//	uint32_t intr_status = PCNT.int_st.val;
 	//  Clear the high limit interrupt.
 	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
-
-	    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
+meterqueue counter_intr = { 1, 0 }  //  intr_type = 1 indicates counter interrupt.
+	    xQueueSendFromISR(uniqueue, &counter_intr, NULL);
 	//xQueueOverwriteFromISR(pcnt_evt_queue, &intr_status, NULL);
 }
 
