@@ -24,8 +24,8 @@ static void IRAM_ATTR pcnt_example_intr_handler(void *arg)
 	//  Clear the high limit interrupt.
 	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
 
-	//    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
-	xQueueOverwriteFromISR(pcnt_evt_queue, &intr_status, NULL);
+	    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
+	//xQueueOverwriteFromISR(pcnt_evt_queue, &intr_status, NULL);
 }
 
 static void pcnt_init(void)
