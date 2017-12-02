@@ -19,7 +19,7 @@ xQueueHandle pcnt_evt_queue;   // A queue to handle pulse counter events
 static void IRAM_ATTR pcnt_example_intr_handler(void *arg)
 {
 	//  Can probably be simplified; really only acts as a blocker in the task.
-	BaseType_t xHigherPriorityTaskWoken;
+//	BaseType_t xHigherPriorityTaskWoken;
 	uint32_t intr_status = PCNT.int_st.val;
 	//  Clear the high limit interrupt.
 	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.

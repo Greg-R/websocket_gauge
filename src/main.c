@@ -58,7 +58,7 @@ static void set_meter(void * arg) {
 	current_position = 0;  //  Initial value; this should be re-written.
 
 	for(;;) {
-		printf("Top of the set_meter for loop.\n");
+//		printf("Top of the set_meter for loop.\n");
 		//  Block the loop with a queue.
 		//  The queue should contain the new value of the meter.
 		//  This unblocks when the RPC is done via Websocket.
@@ -79,7 +79,7 @@ static void set_meter(void * arg) {
 		delta_abs = abs(delta);
 		//  If the delta is zero, don't start the PWM!
 		if (delta_abs != 0) {
-			printf("Setting event value to %d.\n", delta_abs);
+//			printf("Setting event value to %d.\n", delta_abs);
 			pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_H_LIM, delta_abs);
 			//  The following commands are important!
 			//  It's possible the counter has "shadow" registers.
@@ -88,8 +88,10 @@ static void set_meter(void * arg) {
 			pcnt_counter_clear(PCNT_TEST_UNIT);
 			pcnt_counter_resume(PCNT_TEST_UNIT);
 			mcpwm_start(MCPWM_UNIT_0, 0);
+			//  This unblocks when the counter high limit interrupt fires.
+			//  Could use a semaphore here.  Is it more efficient?
 			xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);  //  This will block until update received.
-			printf("Stopping PWM in set_meter.\n");
+//			printf("Stopping PWM in set_meter.\n");
 			stop_pwm = mcpwm_stop(MCPWM_UNIT_0, 0);
 		}
 	}
@@ -98,13 +100,13 @@ static void set_meter(void * arg) {
 // Callback function pointer for Websocket to web page.
 static void cb(struct mg_rpc_request_info *ri, void * cb_arg,
 		struct mg_rpc_frame_info *fi, struct mg_str args) {
-	int32_t state, led;
-	if (json_scanf(args.p, args.len, ri->args_fmt, &state, &led) == 2) {
+	int32_t mtr;
+	if (json_scanf(args.p, args.len, ri->args_fmt, &mtr) == 1) {
 		//		mgos_gpio_write(led, state);
 		//  Can write to queue and send from queue here?
-		xQueueSend(meter_set, &led, portMAX_DELAY);
+		xQueueSend(meter_set, &mtr, portMAX_DELAY);
 	}
-	mg_rpc_send_responsef(ri, "true");
+//	mg_rpc_send_responsef(ri, "true");
 	(void)cb_arg;
 	(void)fi;
 }
@@ -119,14 +121,14 @@ enum mgos_app_init_result mgos_app_init(void) {
 	//	mgos_gpio_set_mode(17, MGOS_GPIO_MODE_OUTPUT);
 	//	mgos_gpio_set_mode(18, MGOS_GPIO_MODE_OUTPUT);
 	//	mgos_gpio_set_mode(19, MGOS_GPIO_MODE_OUTPUT);
-	mg_rpc_add_handler(c, "ledtoggle", "{state: %d, led: %d}", cb, NULL);
+	mg_rpc_add_handler(c, "meter", "{mtr: %d}", cb, NULL);
 
 	//  This function runs only once at start-up.
 	xTaskCreate(calibrate, "calibrate", 4096, NULL, 5, NULL); //  This gets priority and then deletes itself.
 
 	//  This task waits for a queue the meter_set to unblock, and then gets the data
 	//  from the queue written by RPC, and uses this to move the meter to the desired position.
-	xTaskCreate(set_meter, "set_meter", 4096, NULL, 5, NULL);
+	xTaskCreate(set_meter, "set_meter", 4096, NULL, 4, NULL);
 
 	return MGOS_APP_INIT_SUCCESS;
 }

@@ -68,17 +68,16 @@ const currentUrl = window.location.origin; //  Get the URL from the browser.
 console.log(`The currentURL is ${currentUrl}.`);
 const serverUrl = currentUrl.match(serverUrlRegex); //  Extract what is needed to create WebSocket.
 console.log(`The server URL is ${serverUrl[0]}`); //  The match is in the 0th element of the array.
-let ws = new WebSocket(`ws://${serverUrl}/rpc/ledtoggle`); //  Comment this for static URI.
+let ws = new WebSocket(`ws://${serverUrl}/rpc/meter`); //  Comment this for static URI.
     
     function outputUpdate(vol) {
 	document.querySelector('#volume').value = vol;
 	
     if (ws.readyState === ws.OPEN) {
         ws.send(JSON.stringify({
-            "method": "ledtoggle", // Required. Function name to invoke.
+            "method": "meter", // Required. Function name to invoke.
             "args": { // Optional. Call arguments
-                "state": 1,
-                "led": vol
+                "mtr": vol
             }
         }));
 	
