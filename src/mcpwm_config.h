@@ -13,7 +13,7 @@
 mcpwm_config_t pwm_config;
 
 void set_mcpwm_config() {
-	pwm_config.frequency = 1000;    //frequency = 1000Hz
+	pwm_config.frequency = 200;    //frequency = 1000Hz
 	pwm_config.cmpr_a = 50.0;       //duty cycle of PWMxA = 50.0%
 	pwm_config.cmpr_b = 50.0;       //duty cycle of PWMxb = 50.0%
 	pwm_config.counter_mode = MCPWM_UP_COUNTER;

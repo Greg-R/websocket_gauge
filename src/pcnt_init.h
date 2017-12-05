@@ -6,11 +6,11 @@
 #define PCNT_TEST_UNIT      PCNT_UNIT_0
 //  The high limit needs to be set to high value to "calibrate" the needle
 //  against the left stop.
-#define PCNT_H_LIM_VAL      1300
+#define PCNT_H_LIM_VAL      5000
 #define PCNT_INPUT_SIG_IO   4  // Pulse Input GPIO
 #define PCNT_INPUT_CTRL_IO  5  // Control GPIO HIGH=count up, LOW=count down
 
-xQueueHandle pcnt_evt_queue;   // A queue to handle pulse counter events
+SemaphoreHandle_t counterSemaphore;
 
 // Decode what PCNT's unit originated an interrupt
 // and pass this information together with the event type
@@ -20,11 +20,13 @@ static void IRAM_ATTR pcnt_example_intr_handler(void *arg)
 {
 	//  Can probably be simplified; really only acts as a blocker in the task.
 //	BaseType_t xHigherPriorityTaskWoken;
-	uint32_t intr_status = PCNT.int_st.val;
+//	uint32_t intr_status = PCNT.int_st.val;
 	//  Clear the high limit interrupt.
-	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
 
-	    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
+
+	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
+xSemaphoreGiveFromISR(counterSemaphore, NULL);
+//	    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
 	//xQueueOverwriteFromISR(pcnt_evt_queue, &intr_status, NULL);
 }
 

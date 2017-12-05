@@ -4,6 +4,7 @@
 #include "mgos_gpio.h"
 #include "mgos_rpc.h"
 #include "mcpwm_config.h"
+#include "freertos/semphr.h"
 #include "pcnt_init.h"
 
 //  The incoming new meter position is written to this queue by the RPC handler.
@@ -25,7 +26,7 @@ void dir_control() {
 static void calibrate(void *arg) {
 	//  This task implements a delay long enough to
 	//  guarantee the needle is slammed against the low stop.
-	uint32_t intr_status;
+//	uint32_t intr_status;
 	dir_control();
 	//  Set GPIO dir bit for cal counter-clockwise rotation.
 	gpio_set_level(GPIO_NUM_12, 0);
@@ -37,7 +38,8 @@ static void calibrate(void *arg) {
 	//  Initialize the PWM.  This will start the PWM.
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);
 	//  This blocks this task until the Counter's high limit interrupt runs the ISR and writes to the queue.
-	xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);
+	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+//	xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);
 	//  Immediately stop the PWM and reset the counter.
 	mcpwm_stop(MCPWM_UNIT_0, 0);
 	pcnt_counter_pause(PCNT_TEST_UNIT);
@@ -51,8 +53,8 @@ static void calibrate(void *arg) {
 //  direction control to get the needle to the new position.
 //  Assume the range of the meter is 0-1200.
 static void set_meter(void * arg) {
-	int16_t delta, high_limit;
-	int16_t current_position, new_position, delta_abs, counter;
+	int16_t delta;
+	int16_t current_position, new_position, delta_abs;
 	uint32_t intr_status;
 	esp_err_t stop_pwm;
 	current_position = 0;  //  Initial value; this should be re-written.
@@ -90,7 +92,8 @@ static void set_meter(void * arg) {
 			mcpwm_start(MCPWM_UNIT_0, 0);
 			//  This unblocks when the counter high limit interrupt fires.
 			//  Could use a semaphore here.  Is it more efficient?
-			xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);  //  This will block until update received.
+			xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+//			xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);  //  This will block until update received.
 //			printf("Stopping PWM in set_meter.\n");
 			stop_pwm = mcpwm_stop(MCPWM_UNIT_0, 0);
 		}
@@ -112,10 +115,13 @@ static void cb(struct mg_rpc_request_info *ri, void * cb_arg,
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
+//	xQueueHandle meter_set;
+//	xQueueHandle pcnt_evt_queue;   // A queue to handle pulse counter events
 	//  This queue is used for un-blocking and also can send interrupt type information.
-	pcnt_evt_queue = xQueueCreate(2, sizeof(int32_t));
+//	pcnt_evt_queue = xQueueCreate(2, sizeof(int32_t));
+	counterSemaphore = xSemaphoreCreateBinary();
 	//  This queue of size one stores the NEW meter setting;
-	meter_set = xQueueCreate(50, sizeof(int16_t));
+	meter_set = xQueueCreate(400, sizeof(int16_t));
 
 	struct mg_rpc *c = mgos_rpc_get_global();
 	//	mgos_gpio_set_mode(17, MGOS_GPIO_MODE_OUTPUT);
