@@ -90,11 +90,15 @@ static void set_meter(void * arg) {
 			pcnt_counter_clear(PCNT_TEST_UNIT);
 			pcnt_counter_resume(PCNT_TEST_UNIT);
 			mcpwm_start(MCPWM_UNIT_0, 0);
+
+			//  This unblocks when the counter mid-limit interrupt fires.
+//			xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+
+//			stop_pwm = mcpwm_stop(MCPWM_UNIT_0, 0);
+			//  Now immediately restart the PWM with 600 Hz.
 			//  This unblocks when the counter high limit interrupt fires.
-			//  Could use a semaphore here.  Is it more efficient?
 			xSemaphoreTake(counterSemaphore, portMAX_DELAY);
-//			xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);  //  This will block until update received.
-//			printf("Stopping PWM in set_meter.\n");
+
 			stop_pwm = mcpwm_stop(MCPWM_UNIT_0, 0);
 		}
 	}

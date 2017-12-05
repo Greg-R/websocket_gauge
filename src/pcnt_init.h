@@ -22,9 +22,10 @@ static void IRAM_ATTR pcnt_example_intr_handler(void *arg)
 //	BaseType_t xHigherPriorityTaskWoken;
 //	uint32_t intr_status = PCNT.int_st.val;
 	//  Clear the high limit interrupt.
+//	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
+	//  Will this clear everything?
+	PCNT.int_clr.val = 0;
 
-
-	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
 xSemaphoreGiveFromISR(counterSemaphore, NULL);
 //	    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
 	//xQueueOverwriteFromISR(pcnt_evt_queue, &intr_status, NULL);
@@ -57,6 +58,9 @@ static void pcnt_init(void)
 	/* Enable events on maximum value. Disable zero!!! */
 	pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_H_LIM);
 	pcnt_event_disable(PCNT_TEST_UNIT, PCNT_EVT_ZERO);
+
+	// Enable events on maximum value.
+	pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_H_LIM);
 
 	/* Initialize PCNT's counter */
 	pcnt_counter_pause(PCNT_TEST_UNIT);
