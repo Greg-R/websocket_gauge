@@ -6,9 +6,11 @@
 #define PCNT_TEST_UNIT      PCNT_UNIT_0
 //  The high limit needs to be set to high value to "calibrate" the needle
 //  against the left stop.
-#define PCNT_H_LIM_VAL      5000
+#define PCNT_H_LIM_VAL      2500
 #define PCNT_INPUT_SIG_IO   4  // Pulse Input GPIO
 #define PCNT_INPUT_CTRL_IO  5  // Control GPIO HIGH=count up, LOW=count down
+//#define PCNT_THRESH0_VAL    100
+//#define PCNT_THRESH1_VAL    5
 
 SemaphoreHandle_t counterSemaphore;
 
@@ -22,9 +24,12 @@ static void IRAM_ATTR pcnt_example_intr_handler(void *arg)
 //	BaseType_t xHigherPriorityTaskWoken;
 //	uint32_t intr_status = PCNT.int_st.val;
 	//  Clear the high limit interrupt.
-//	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.
+//	PCNT.int_clr.val = BIT(0);  // High limit is interrupt bit 0.  Threshold 0 is bit 2.
 	//  Will this clear everything?
-	PCNT.int_clr.val = 0;
+	PCNT.int_clr.val = BIT(0);
+//	PCNT.int_clr.val = BIT(1);
+	PCNT.int_clr.val = BIT(2);
+//	PCNT.int_clr.val = BIT(3);
 
 xSemaphoreGiveFromISR(counterSemaphore, NULL);
 //	    xQueueSendFromISR(pcnt_evt_queue, &intr_status, NULL);
@@ -59,8 +64,8 @@ static void pcnt_init(void)
 	pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_H_LIM);
 	pcnt_event_disable(PCNT_TEST_UNIT, PCNT_EVT_ZERO);
 
-	// Enable events on maximum value.
-	pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_H_LIM);
+	// Enable events on threshold 0 value.
+	pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_THRES_0);
 
 	/* Initialize PCNT's counter */
 	pcnt_counter_pause(PCNT_TEST_UNIT);

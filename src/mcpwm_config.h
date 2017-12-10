@@ -8,8 +8,6 @@
 
 #define GPIO_PWM0A_OUT 19   //Set GPIO 19 as PWM0A
 #define GPIO_PWM0B_OUT 18   //Set GPIO 18 as PWM0B
-#define PCNT_THRESH0_VAL    10
-#define PCNT_THRESH1_VAL    20
 
 //  This is the statically allocated MCPWM config struct.
 mcpwm_config_t pwm_config;
@@ -29,8 +27,8 @@ void set_mcpwm_config() {
 
 	//  Set another timer for a higher PWM frequency.
 	//  This will be the post-accelerate frequency of 600 Hz.
-	uint32_t freqHigh = 600;
-	mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_1, freqHigh);
+//	uint32_t freqHigh = 600;
+//	mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_0, freqHigh);
 }
 
 

@@ -26,7 +26,8 @@ void dir_control() {
 static void calibrate(void *arg) {
 	//  This task implements a delay long enough to
 	//  guarantee the needle is slammed against the low stop.
-//	uint32_t intr_status;
+	uint16_t threshold0 = 5;
+
 	dir_control();
 	//  Set GPIO dir bit for cal counter-clockwise rotation.
 	gpio_set_level(GPIO_NUM_12, 0);
@@ -35,15 +36,32 @@ static void calibrate(void *arg) {
 	//  Set the count limit such that it is guaranteed the stepper
 	//  slams the left rail.  See macro PCNT_H_LIM_VAL in pcnt_init.h.
 	pcnt_init();
+
+	//  An experiment to see if the frequency can be dynamically changed.
+	pcnt_counter_pause(PCNT_TEST_UNIT);
+	pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_THRES_0, threshold0);
+	pcnt_counter_clear(PCNT_TEST_UNIT);
+	pcnt_counter_resume(PCNT_TEST_UNIT);
+
 	//  Initialize the PWM.  This will start the PWM.
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);
 	//  This blocks this task until the Counter's high limit interrupt runs the ISR and writes to the queue.
+
+	//  Try a loop here to bring the rpm up to speed gradually.
+	//  This may simply use too many interrupts.
+	for (int rpm = 400; rpm <= 1000; rpm += 10) {
 	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
-//	xQueueReceive(pcnt_evt_queue, &intr_status, portMAX_DELAY);
 	//  Immediately stop the PWM and reset the counter.
 	mcpwm_stop(MCPWM_UNIT_0, 0);
-	pcnt_counter_pause(PCNT_TEST_UNIT);
-	pcnt_counter_clear(PCNT_TEST_UNIT);
+//	pcnt_counter_pause(PCNT_TEST_UNIT);
+	pcnt_counter_clear(PCNT_TEST_UNIT);  //  Can the counter be cleared with this single command?
+//	pcnt_counter_resume(PCNT_TEST_UNIT);
+	mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_0, rpm);
+	mcpwm_start(MCPWM_UNIT_0, 0);
+	}
+	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+	mcpwm_stop(MCPWM_UNIT_0, 0);
 	printf("Complete calibration routine.\n");
 	vTaskDelete(NULL);  //  This task is no longer required after completion of calibration.
 }
@@ -53,11 +71,12 @@ static void calibrate(void *arg) {
 //  direction control to get the needle to the new position.
 //  Assume the range of the meter is 0-1200.
 static void set_meter(void * arg) {
-	int16_t delta;
+	int16_t delta, threshold0;
 	int16_t current_position, new_position, delta_abs;
 	uint32_t intr_status;
-	esp_err_t stop_pwm;
 	current_position = 0;  //  Initial value; this should be re-written.
+
+	threshold0 = 100;
 
 	for(;;) {
 //		printf("Top of the set_meter for loop.\n");
@@ -77,11 +96,12 @@ static void set_meter(void * arg) {
 			gpio_set_level(GPIO_NUM_12, 1);
 		}
 		//  Set the pulse counter high level to delta.
-		//  Clear counter back to zero.
-		delta_abs = abs(delta);
+		delta_abs = abs(delta) - 100;
 		//  If the delta is zero, don't start the PWM!
 		if (delta_abs != 0) {
 //			printf("Setting event value to %d.\n", delta_abs);
+			//  This is the accelerator threshold:
+			pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_THRES_0, threshold0);
 			pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_H_LIM, delta_abs);
 			//  The following commands are important!
 			//  It's possible the counter has "shadow" registers.
@@ -89,17 +109,23 @@ static void set_meter(void * arg) {
 			//  commands are not used.
 			pcnt_counter_clear(PCNT_TEST_UNIT);
 			pcnt_counter_resume(PCNT_TEST_UNIT);
-			mcpwm_start(MCPWM_UNIT_0, 0);
-
+//			mcpwm_start(MCPWM_UNIT_0, 0);
+			mcpwm_set_duty_type(MCPWM_UNIT_0, 0, MCPWM0A, MCPWM_DUTY_MODE_0);
 			//  This unblocks when the counter mid-limit interrupt fires.
-//			xSemaphoreTake(counterSemaphore, portMAX_DELAY);
-
-//			stop_pwm = mcpwm_stop(MCPWM_UNIT_0, 0);
-			//  Now immediately restart the PWM with 600 Hz.
-			//  This unblocks when the counter high limit interrupt fires.
+			//  This should fire after 10 PWM pulses.
 			xSemaphoreTake(counterSemaphore, portMAX_DELAY);
 
-			stop_pwm = mcpwm_stop(MCPWM_UNIT_0, 0);
+
+			mcpwm_set_signal_low(MCPWM_UNIT_0, 0, 0);
+//			mcpwm_stop(MCPWM_UNIT_0, 0);
+			//  Now immediately restart the PWM with 600 Hz.
+//			mcpwm_start(MCPWM_UNIT_0, 0);
+			mcpwm_set_duty_type(MCPWM_UNIT_0, 1, MCPWM1A, MCPWM_DUTY_MODE_0);
+
+			//  This unblocks when the counter high limit interrupt fires.
+			xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+			mcpwm_set_signal_low(MCPWM_UNIT_0, 1, MCPWM1A);
+	//		mcpwm_stop(MCPWM_UNIT_0, 0);
 		}
 	}
 }
@@ -127,11 +153,11 @@ enum mgos_app_init_result mgos_app_init(void) {
 	//  This queue of size one stores the NEW meter setting;
 	meter_set = xQueueCreate(400, sizeof(int16_t));
 
-	struct mg_rpc *c = mgos_rpc_get_global();
+//	struct mg_rpc *c = mgos_rpc_get_global();
 	//	mgos_gpio_set_mode(17, MGOS_GPIO_MODE_OUTPUT);
 	//	mgos_gpio_set_mode(18, MGOS_GPIO_MODE_OUTPUT);
 	//	mgos_gpio_set_mode(19, MGOS_GPIO_MODE_OUTPUT);
-	mg_rpc_add_handler(c, "meter", "{mtr: %d}", cb, NULL);
+//	mg_rpc_add_handler(c, "meter", "{mtr: %d}", cb, NULL);
 
 	//  This function runs only once at start-up.
 	xTaskCreate(calibrate, "calibrate", 4096, NULL, 5, NULL); //  This gets priority and then deletes itself.
