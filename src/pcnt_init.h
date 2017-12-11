@@ -6,7 +6,7 @@
 #define PCNT_TEST_UNIT      PCNT_UNIT_0
 //  The high limit needs to be set to high value to "calibrate" the needle
 //  against the left stop.
-#define PCNT_H_LIM_VAL      2500
+#define PCNT_H_LIM_VAL      1900
 #define PCNT_INPUT_SIG_IO   4  // Pulse Input GPIO
 #define PCNT_INPUT_CTRL_IO  5  // Control GPIO HIGH=count up, LOW=count down
 //#define PCNT_THRESH0_VAL    100
@@ -50,7 +50,7 @@ static void pcnt_init(void)
 			// What to do when control input is low or high?
 			.lctrl_mode = PCNT_MODE_REVERSE, // Reverse counting direction if low
 			.hctrl_mode = PCNT_MODE_KEEP,    // Keep the primary counter mode if high
-			// Set the maximum limit value to watch.
+			// Set the maximum limit value to watch.  There is also a function to do this.
 			.counter_h_lim = PCNT_H_LIM_VAL,
 	};
 	// Initialize PCNT unit.

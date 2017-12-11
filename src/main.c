@@ -26,7 +26,8 @@ void dir_control() {
 static void calibrate(void *arg) {
 	//  This task implements a delay long enough to
 	//  guarantee the needle is slammed against the low stop.
-	uint16_t threshold0 = 5;
+	uint16_t threshold0 = 200;
+	uint32_t direction = 0;
 
 	dir_control();
 	//  Set GPIO dir bit for cal counter-clockwise rotation.
@@ -40,6 +41,8 @@ static void calibrate(void *arg) {
 	//  An experiment to see if the frequency can be dynamically changed.
 	pcnt_counter_pause(PCNT_TEST_UNIT);
 	pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_THRES_0, threshold0);
+	//  Re-set the high limit value using the API:
+	pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_H_LIM, 1000);
 	pcnt_counter_clear(PCNT_TEST_UNIT);
 	pcnt_counter_resume(PCNT_TEST_UNIT);
 
@@ -49,21 +52,33 @@ static void calibrate(void *arg) {
 
 	//  Try a loop here to bring the rpm up to speed gradually.
 	//  This may simply use too many interrupts.
-	for (int rpm = 400; rpm <= 1000; rpm += 10) {
+	for (;;) {
+		pcnt_counter_clear(PCNT_TEST_UNIT);
+		mcpwm_start(MCPWM_UNIT_0, 0);
+	//  This will unblock on threshold 0!!!
 	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
 	//  Immediately stop the PWM and reset the counter.
 	mcpwm_stop(MCPWM_UNIT_0, 0);
 //	pcnt_counter_pause(PCNT_TEST_UNIT);
-	pcnt_counter_clear(PCNT_TEST_UNIT);  //  Can the counter be cleared with this single command?
+//	pcnt_counter_clear(PCNT_TEST_UNIT);  //  Can the counter be cleared with this single command?
 //	pcnt_counter_resume(PCNT_TEST_UNIT);
-	mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_0, rpm);
+	mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_0, 600);
 	mcpwm_start(MCPWM_UNIT_0, 0);
-	}
-	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+//	}
+//	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
 	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
 	mcpwm_stop(MCPWM_UNIT_0, 0);
+	pcnt_counter_clear(PCNT_TEST_UNIT);
+	mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_0, 200);
+	mcpwm_start(MCPWM_UNIT_0, 0);
+	xSemaphoreTake(counterSemaphore, portMAX_DELAY);
+	mcpwm_stop(MCPWM_UNIT_0, 0);
+	// Reverse direction.
+	direction = !direction;
+	gpio_set_level(GPIO_NUM_12, direction);
+	}
 	printf("Complete calibration routine.\n");
-	vTaskDelete(NULL);  //  This task is no longer required after completion of calibration.
+//	vTaskDelete(NULL);  //  This task is no longer required after completion of calibration.
 }
 
 //  This task determines the current needle position, and
